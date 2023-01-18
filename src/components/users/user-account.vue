@@ -59,8 +59,9 @@ export default {
       const response = await axios.get(url, { headers: this.headers });
       if (response.data.status === 422) {
         this.logout();
+        this.$toast.error("Aunthentication failed");
       } else if (response.data.status === 400) {
-        console.log(response.data.message);
+        this.$toast.error(response.data.message);
       } else {
         this.userData = response.data.data;
       }

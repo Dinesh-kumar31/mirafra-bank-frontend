@@ -198,10 +198,10 @@ export default {
         if (response.data.status === 200) {
           this.userData = response.data.data;
         } else {
-          console.log(response.data.message);
+          this.$toast.error(response.data.message);
         }
       } catch (error) {
-        console.log(error);
+        this.$toast.error("Something went wrong, unable to connect");
       }
     },
     async onTransaction() {
@@ -213,8 +213,8 @@ export default {
         this.transaction === "withdraw" &&
         this.userData.currentBalance < this.state.amount
       ) {
-        console.log(
-          "You enter a wrong value check the current balance of account holder"
+        this.$toast.error(
+          "Invalid amount, check once the current balance of account holder"
         );
         return;
       }
@@ -235,6 +235,7 @@ export default {
       if (response.data.status === 200) {
         this.reset();
         this.userData = null;
+        this.$toast.success(`Amount ${this.transaction} successfully`);
       } else {
         console.log(response.data.message);
       }

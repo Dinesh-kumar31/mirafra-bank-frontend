@@ -119,26 +119,26 @@ export default {
         if (response.data.status === 200) {
           this.userList = response.data.data;
         } else {
-          console.log(response.data.message);
+          this.$toast.error(response.data.message);
         }
         this.loading = false;
       } catch (error) {
         this.loading = false;
-        console.log(error);
+        this.$toast.error("Something went wrong, unable to connect");
       }
     },
     async deleteUser(data) {
       try {
-        console.log(data);
         const url = "api/deleteUser/" + data?._id;
         const response = await axios.delete(url, { headers: this.headers });
         if (response.data.status === 200) {
           this.getAllUsers();
+          this.$toast.error("Account deleted successfully");
         } else {
-          console.log(response.data.message);
+          this.$toast.error(response.data.message);
         }
       } catch (error) {
-        console.log(error);
+        this.$toast.error("Something went wrong, unable to connect");
       }
     },
     closeCanvas() {

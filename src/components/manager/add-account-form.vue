@@ -27,6 +27,7 @@
               id="account-number"
               placeholder="Account Number"
               v-model="state.accountNumber"
+              :disabled="!isEdit"
               :class="{ 'is-invalid': v$.accountNumber.$error }"
             />
 
@@ -187,10 +188,12 @@ export default {
     isEdit: Boolean,
   },
   data() {
-    return {headers: {
+    return {
+      headers: {
         authorization: localStorage.getItem("token"),
         role: localStorage.getItem("role"),
-      },};
+      },
+    };
   },
   setup() {
     const state = reactive({
@@ -256,25 +259,39 @@ export default {
         }
         if (!this.isEdit) {
           const url = "api/createUser";
-          const response = await axios.post(url, payload,{ headers: this.headers });
+          const response = await axios.post(url, payload, {
+            headers: this.headers,
+          });
           if (response.data.status === 200) {
             this.v$.$reset();
             this.$emit("userAdded");
+            this.$toast.success(`User account added successfully`);
           } else {
-            console.log(response.data.message);
+            this.$toast.error(response.data.message);
           }
         } else {
           const url = "api/updateUser/" + this.selectedUser._id;
-          const response = await axios.put(url, payload,{ headers: this.headers });
+          const response = await axios.put(url, payload, {
+            headers: this.headers,
+          });
           if (response.data.status === 200) {
             this.v$.$reset();
             this.$emit("userAdded");
+            this.$toast.success(`User account updated successfully`);
           } else {
-            console.log(response.data.message);
+            this.$toast.error(response.data.message);
           }
         }
       } catch (error) {
-        console.log(error);
+        this.$toast.error("Something went wrong, unable to connect");
+      }
+    },
+    recurse() {
+      let n = Math.floor(Math.random() * 10000000000);
+      if (n.toString().length !== 10) {
+        this.recurse();
+      } else {
+        this.state.accountNumber = Math.floor(Math.random() * 10000000000);
       }
     },
   },
@@ -288,6 +305,8 @@ export default {
       this.state.password = this.selectedUser.password;
       this.state.deposit = this.selectedUser.currentBalance;
       this.state.contactNumber = this.selectedUser.contactNo;
+    } else {
+      this.recurse();
     }
   },
 };

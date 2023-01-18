@@ -18,6 +18,12 @@
                   v-model="state.accountNumber"
                   :class="{ 'is-invalid': v$.accountNumber.$error }"
                 />
+                <div
+                  class="invalid-feedback text-start"
+                  :if="v$.accountNumber.$error"
+                >
+                  {{ v$.accountNumber.$errors[0]?.$message }}
+                </div>
                 <button
                   class="btn btn-info mt-3"
                   @click="getAccountInfo"
@@ -209,9 +215,6 @@ export default {
       if (this.v$.$error) {
         return;
       }
-      if (this.ownData.currentBalance < this.state.amount) {
-        return;
-      }
       try {
         const url = "api/getAccountDetails/" + this.state.accountNumber;
         const response = await axios.get(url, { headers: this.headers });
@@ -219,15 +222,17 @@ export default {
           this.userData = response.data.data;
           console.log(this.userData);
         } else {
-          console.log(response.data.message);
+          this.$toast.error(response.data.message);
         }
       } catch (error) {
-        console.log(error);
+        this.$toast.error("Something went wrong, unable to connect");
       }
     },
     reset() {
       this.v$.$reset();
+      this.a$.$reset();
       this.state.accountNumber = "";
+      this.state.amount = "";
       this.userData = null;
     },
     dateFormat(value) {
@@ -239,10 +244,15 @@ export default {
         return;
       }
 
-      if (this.userData._id === localStorage.getItem("userId")) {
-        console.log("give an proper user");
+      if (this.ownData.currentBalance < this.state.amount) {
+        this.$toast.error("Invalid amount, Check once your current balance");
         return;
       }
+      if (this.userData._id === localStorage.getItem("userId")) {
+        this.$toast.error("Invalid User, Give a proper account holder");
+        return;
+      }
+
       const topayload = { ...this.userData };
       topayload.currentBalance += this.state.amount;
       topayload.transfer.push({
@@ -270,8 +280,10 @@ export default {
       if (response.data.status === 200) {
         this.reset();
         this.userData = null;
+        this.getOwnData();
+        this.$toast.success("Amount Transfered successfully");
       } else {
-        console.log(response.data.message);
+        this.$toast.error(response.data.message);
       }
     },
   },

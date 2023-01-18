@@ -146,11 +146,12 @@ export default {
               ? "cashiermain"
               : "user/useraccount";
           this.$router.push({ path: "/" + type });
+          this.$toast.success(`Welcome back, You login successfully`);
         } else {
-          console.log(response.data.message);
+          this.$toast.error(response.data.message);
         }
       } catch (error) {
-        console.log(error);
+        this.$toast.error("Something went wrong, unable to connect");
       }
     },
   },

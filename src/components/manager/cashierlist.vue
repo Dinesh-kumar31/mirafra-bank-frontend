@@ -172,16 +172,16 @@ export default {
       try {
         this.loading = true;
         var url = "api/getCashiers";
-        const response = await axios.get(url,{ headers: this.headers });
+        const response = await axios.get(url, { headers: this.headers });
         if (response.data.status === 200) {
           this.cashierList = response.data.data;
         } else {
-          console.log(response.data.message);
+          this.$toast.error(response.data.message);
         }
         this.loading = false;
       } catch (error) {
         this.loading = false;
-        console.log(error);
+        this.$toast.error("Something went wrong, unable to connect");
       }
     },
     async addAccount() {
@@ -197,23 +197,29 @@ export default {
       };
       if (!this.isEdit) {
         const url = "api/createCashier";
-        const response = await axios.post(url, payload,{ headers: this.headers });
+        const response = await axios.post(url, payload, {
+          headers: this.headers,
+        });
         if (response.data.status === 200) {
           document.getElementById("close-model").click();
           this.closeCashierForm();
           this.getAllCashier();
+          this.$toast.success("Cashier account created successfully");
         } else {
-          console.log(response.data.message);
+          this.$toast.error("Cashier account not created successfully");
         }
       } else {
         const url = "api/updateCashier/" + this.selectedData._id;
-        const response = await axios.put(url, payload,{ headers: this.headers });
+        const response = await axios.put(url, payload, {
+          headers: this.headers,
+        });
         if (response.data.status === 200) {
           document.getElementById("close-model").click();
           this.closeCashierForm();
           this.getAllCashier();
+          this.$toast.success("Cashier account updated successfully");
         } else {
-          console.log(response.data.message);
+          this.$toast.error("Cashier account not updated successfully");
         }
       }
     },
@@ -229,14 +235,15 @@ export default {
       try {
         console.log(data);
         const url = "api/deleteCashier/" + data?._id;
-        const response = await axios.delete(url,{ headers: this.headers });
+        const response = await axios.delete(url, { headers: this.headers });
         if (response.data.status === 200) {
           this.getAllCashier();
+          this.$toast.success("Cashier account deleted successfully");
         } else {
-          console.log(response.data.message);
+          this.$toast.error(response.data.message);
         }
       } catch (error) {
-        console.log(error);
+        this.$toast.error("Something went wrong, unable to connect");
       }
     },
     closeCashierForm() {

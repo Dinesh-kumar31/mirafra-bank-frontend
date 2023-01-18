@@ -14,6 +14,7 @@ import UserMain from "../src/components/users/user-main.vue";
 import UserAccount from "../src/components/users/user-account.vue";
 import AccountStatement from "../src/components/users/account-statement.vue";
 import FundTransfer from "../src/components/users/fund-transfer.vue";
+import Toaster from "@meforma/vue-toaster";
 
 const routes = [
   {
@@ -132,5 +133,10 @@ const route = createRouter({
 
 createApp(App)
   .use(route)
+  .use(Toaster, {
+    position: "bottom-right",
+    queue: true,
+    duration: 2500,
+  })
   .component("EasyDataTable", Vue3EasyDataTable)
   .mount("#app");
