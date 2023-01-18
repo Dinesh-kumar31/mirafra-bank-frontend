@@ -9,13 +9,18 @@
           type="button"
           data-bs-toggle="offcanvas"
           data-bs-target="#offcanvasTop"
-          @click="openAddAccount"
+          @click="openAddAccount(null, false)"
         >
           Add New Account
         </button>
       </div>
 
-      <EasyDataTable show-index :headers="headers" :items="items">
+      <EasyDataTable
+        show-index
+        :headers="headers"
+        :loading="loading"
+        :items="userList"
+      >
         <template #loading>
           <img
             src="https://i.pinimg.com/originals/94/fd/2b/94fd2bf50097ade743220761f41693d5.gif"
@@ -24,10 +29,15 @@
         </template>
         <template #item-action="item">
           <div>
-            <a href="javascript:void(0)" class="me-2" @click="editItem(item)"
+            <a
+              href="javascript:void(0)"
+              class="me-2"
+              data-bs-toggle="offcanvas"
+              data-bs-target="#offcanvasTop"
+              @click="openAddAccount(item, true)"
               >Edit</a
             >
-            <a href="javascript:void(0)" @click="deleteItem(item)">Delete</a>
+            <a href="javascript:void(0)" @click="deleteUser(item)">Delete</a>
           </div>
         </template>
       </EasyDataTable>
@@ -46,84 +56,98 @@
         class="btn-close text-reset"
         data-bs-dismiss="offcanvas"
         aria-label="Close"
+        id="offcanvas-close"
       ></button>
     </div>
     <div class="offcanvas-body" v-if="isOpenAddAccountForm">
-      <AddAccountForm />
+      <AddAccountForm
+        :selected-user="selectedUser"
+        :isEdit="isEdit"
+        @user-added="closeCanvas()"
+      />
     </div>
   </div>
 </template>
 
 <script setup>
 const headers = [
-  { text: "Holder Name", value: "player" },
-  { text: "Account No.", value: "team" },
-  { text: "Branch Name", value: "number" },
-  { text: "Current Balance", value: "position" },
-  { text: "Account type", value: "indicator.height" },
-  { text: "Contact", value: "indicator.weight" },
+  { text: "Holder Name", value: "name" },
+  { text: "Account No.", value: "accountNo" },
+  { text: "Current Balance(₹)", value: "currentBalance" },
+  { text: "Account type", value: "accountType" },
+  { text: "Contact", value: "contactNo" },
   { text: "Action", value: "action" },
-];
-
-const items = [
-  {
-    player: "Stephen Curry",
-    team: "GSW",
-    number: 30,
-    position: "G",
-    indicator: { height: "6-2", weight: 185 },
-    lastAttended: "Davidson",
-    country: "USA",
-  },
-  {
-    player: "Lebron James",
-    team: "LAL",
-    number: 6,
-    position: "F",
-    indicator: { height: "6-9", weight: 250 },
-    lastAttended: "St. Vincent-St. Mary HS (OH)",
-    country: "USA",
-  },
-  {
-    player: "Kevin Durant",
-    team: "BKN",
-    number: 7,
-    position: "F",
-    indicator: { height: "6-10", weight: 240 },
-    lastAttended: "Texas-Austin",
-    country: "USA",
-  },
-  {
-    player: "Giannis Antetokounmpo",
-    team: "MIL",
-    number: 34,
-    position: "F",
-    indicator: { height: "6-11", weight: 242 },
-    lastAttended: "Filathlitikos",
-    country: "Greece",
-  },
 ];
 </script>
 
 <script>
 import AddAccountForm from "./add-account-form.vue";
+import axios from "axios";
+
 export default {
   name: "user-list",
   data() {
     return {
       isOpenAddAccountForm: false,
+      userList: [],
+      loading: false,
+      selectedUser: {},
+      isEdit: false,
+      headers: {
+        authorization: localStorage.getItem("token"),
+        role: localStorage.getItem("role"),
+      },
     };
   },
   components: {
     AddAccountForm,
   },
   methods: {
-    openAddAccount() {
+    openAddAccount(data, type) {
+      this.selectedUser = data;
+      this.isEdit = type;
       this.isOpenAddAccountForm = false;
       setTimeout(() => {
         this.isOpenAddAccountForm = true;
       }, 100);
     },
+    async getAllUsers() {
+      try {
+        this.loading = true;
+        var url = "api/getUsers";
+        const response = await axios.get(url, { headers: this.headers });
+        if (response.data.status === 200) {
+          this.userList = response.data.data;
+        } else {
+          console.log(response.data.message);
+        }
+        this.loading = false;
+      } catch (error) {
+        this.loading = false;
+        console.log(error);
+      }
+    },
+    async deleteUser(data) {
+      try {
+        console.log(data);
+        const url = "api/deleteUser/" + data?._id;
+        const response = await axios.delete(url, { headers: this.headers });
+        if (response.data.status === 200) {
+          this.getAllUsers();
+        } else {
+          console.log(response.data.message);
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    },
+    closeCanvas() {
+      document.getElementById("offcanvas-close").click();
+      this.getAllUsers();
+    },
+  },
+  beforeMount() {
+    this.getAllUsers();
   },
 };
 </script>

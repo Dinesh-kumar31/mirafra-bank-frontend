@@ -35,7 +35,7 @@
             </ul>
           </div>
           <div class="card-body">
-            <form class="row needs-validation g-3" ref="form" non-validate>
+            <form class="row needs-validation g-3" ref="loginForm" non-validate>
               <div class="form-floating mb-3">
                 <input
                   type="email"
@@ -89,6 +89,7 @@
 import useVuelidate from "@vuelidate/core";
 import { required, email, minLength } from "@vuelidate/validators";
 import { reactive, computed } from "vue";
+const axios = require("axios");
 export default {
   name: "app-login",
   setup() {
@@ -117,23 +118,42 @@ export default {
   },
   methods: {
     selectTab(tab) {
-      this.tabName = tab;
       this.v$.$reset();
+      this.tabName = tab;
     },
-    userLogin() {
+    async userLogin() {
       this.v$.$validate();
       if (this.v$.$error) {
         return;
       }
-      JSON.stringify(localStorage.setItem("role", this.tabName));
-      const type =
-        this.tabName === "manager"
-          ? "manager/userlist"
-          : this.tabName === "cashier"
-          ? "cashiermain"
-          : "user/useraccount";
-      this.$router.push({ path: "/" + type });
+      const payload = {
+        email: this.state.email,
+        password: this.state.password,
+        role: this.tabName,
+      };
+      try {
+        var url = "api/login";
+        const response = await axios.post(url, payload);
+        console.log(response);
+        if (response.data.status === 200) {
+          localStorage.setItem("role", response.data.user.role);
+          localStorage.setItem("token", response.data.token);
+          localStorage.setItem("userId", response.data.user._id);
+          const type =
+            this.tabName === "manager"
+              ? "manager/userlist"
+              : this.tabName === "cashier"
+              ? "cashiermain"
+              : "user/useraccount";
+          this.$router.push({ path: "/" + type });
+        } else {
+          console.log(response.data.message);
+        }
+      } catch (error) {
+        console.log(error);
+      }
     },
   },
+  beforeMount() {},
 };
 </script>

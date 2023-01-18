@@ -7,12 +7,28 @@
           <table class="table table-bordered table-secondary">
             <tbody>
               <tr>
+                <td class="fw-bold">Available Balance:</td>
+                <td>{{ userData?.currentBalance }}</td>
+              </tr>
+              <tr>
                 <td class="fw-bold">Account No:</td>
-                <td>123456</td>
+                <td>{{ userData?.accountNo }}</td>
               </tr>
               <tr>
                 <td class="fw-bold">Account Type:</td>
-                <td>Savings</td>
+                <td>{{ userData?.accountType }}</td>
+              </tr>
+              <tr>
+                <td class="fw-bold">Email:</td>
+                <td>{{ userData?.email }}</td>
+              </tr>
+              <tr>
+                <td class="fw-bold">Contact No:</td>
+                <td>{{ userData?.contactNo }}</td>
+              </tr>
+              <tr>
+                <td class="fw-bold">Created Date:</td>
+                <td>{{ dateFormat(userData.created) }}</td>
               </tr>
             </tbody>
           </table>
@@ -24,7 +40,41 @@
 </template>
 
 <script>
+import axios from "axios";
+import moment from "moment";
 export default {
   name: "user-account",
+  data() {
+    return {
+      userData: {},
+      headers: {
+        authorization: localStorage.getItem("token"),
+        role: localStorage.getItem("role"),
+      },
+    };
+  },
+  methods: {
+    async geAccountData() {
+      const url = "api/getUser/" + localStorage.getItem("userId");
+      const response = await axios.get(url, { headers: this.headers });
+      if (response.data.status === 422) {
+        this.logout();
+      } else if (response.data.status === 400) {
+        console.log(response.data.message);
+      } else {
+        this.userData = response.data.data;
+      }
+    },
+    logout() {
+      localStorage.clear();
+      this.$router.push({ path: "/" });
+    },
+    dateFormat(value) {
+      return moment(value).format("DD-MM-YYYY");
+    },
+  },
+  beforeMount() {
+    this.geAccountData();
+  },
 };
 </script>

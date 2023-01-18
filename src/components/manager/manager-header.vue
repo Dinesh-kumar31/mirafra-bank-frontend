@@ -42,7 +42,11 @@
             >
           </li>
           <li class="nav-item">
-            <a class="nav-link" aria-current="page" href="javascript:void(0)"
+            <a
+              class="nav-link"
+              @click="logout()"
+              aria-current="page"
+              href="javascript:void(0)"
               >Logout</a
             >
           </li>
@@ -55,5 +59,11 @@
 <script>
 export default {
   name: "manger-header",
+  methods: {
+    logout() {
+      localStorage.clear();
+      this.$router.push({ path: "/" });
+    },
+  },
 };
 </script>

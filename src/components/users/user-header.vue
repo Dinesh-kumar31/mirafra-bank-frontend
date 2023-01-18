@@ -43,19 +43,15 @@
               class="nav-link text-dark"
               aria-current="page"
               href="javascript:void(0)"
-              >Welcome Name</a
+              >Welcome</a
             >
           </li>
           <li class="nav-item">
             <a
-              class="nav-link text-dark"
+              class="nav-link"
               aria-current="page"
+              @click="logout"
               href="javascript:void(0)"
-              >Available Balance:</a
-            >
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" aria-current="page" href="javascript:void(0)"
               >Logout</a
             >
           </li>
@@ -68,5 +64,11 @@
 <script>
 export default {
   name: "manger-header",
+  methods: {
+    logout() {
+      localStorage.clear();
+      this.$router.push({ path: "/" });
+    },
+  },
 };
 </script>

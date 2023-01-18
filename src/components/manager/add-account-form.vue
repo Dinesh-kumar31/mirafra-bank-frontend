@@ -1,7 +1,7 @@
 <template>
   <div class="container-fluid">
     <div class="row">
-      <form class="row needs-validation g-3" non-validate>
+      <form class="row needs-validation g-3" ref="form" non-validate>
         <div class="col-md-4">
           <!-- <div class="col-md-8"> -->
           <div class="mb-3">
@@ -65,8 +65,8 @@
               aria-label="Default select example"
             >
               <option value="" disabled>Select</option>
-              <option value="current">Current</option>
-              <option value="savings">Savings</option>
+              <option value="Current">Current</option>
+              <option value="Savings">Savings</option>
             </select>
 
             <div
@@ -115,12 +115,15 @@
         </div>
         <div class="col-md-4">
           <div class="mb-3">
-            <label for="deposit" class="form-label">Deposit:</label>
+            <label for="deposit" class="form-label">{{
+              isEdit ? "Current Balance" : "Deposit:"
+            }}</label>
             <input
               type="number"
               class="form-control"
               id="deposit"
-              placeholder="Deposit"
+              :placeholder="isEdit ? 'Current Balance' : 'Deposit'"
+              :disabled="isEdit"
               v-model="state.deposit"
               :class="{ 'is-invalid': v$.deposit.$error }"
             />
@@ -154,7 +157,7 @@
         </div>
         <div class="mt-3 text-start">
           <button type="button" @click="addAccount()" class="btn btn-primary">
-            Add Account
+            {{ isEdit ? "Update Account" : "Add Account" }}
           </button>
         </div>
       </form>
@@ -173,9 +176,22 @@ import {
   alphaNum,
   maxLength,
 } from "@vuelidate/validators";
+
 import { reactive, computed } from "vue";
+import axios from "axios";
+
 export default {
   name: "add-account",
+  props: {
+    selectedUser: {},
+    isEdit: Boolean,
+  },
+  data() {
+    return {headers: {
+        authorization: localStorage.getItem("token"),
+        role: localStorage.getItem("role"),
+      },};
+  },
   setup() {
     const state = reactive({
       name: "",
@@ -187,7 +203,6 @@ export default {
       deposit: "",
       contactNumber: "",
     });
-
     const rules = computed(() => {
       return {
         name: { required, alpha },
@@ -213,12 +228,67 @@ export default {
     };
   },
   methods: {
-    addAccount() {
+    async addAccount() {
       this.v$.$validate();
       if (this.v$.$error) {
         return;
       }
+      try {
+        const payload = {
+          name: this.state.name,
+          cnic: this.state.cnic,
+          email: this.state.email,
+          accountNo: this.state.accountNumber,
+          accountType: this.state.accountType,
+          password: this.state.password,
+          contactNo: this.state.contactNumber,
+          currentBalance: this.state.deposit,
+        };
+        if (!this.isEdit) {
+          payload.transfer = [
+            {
+              amount: this.state.deposit,
+              transactionType: "deposit",
+              from: "manager",
+              transactionBy: "manager",
+            },
+          ];
+        }
+        if (!this.isEdit) {
+          const url = "api/createUser";
+          const response = await axios.post(url, payload,{ headers: this.headers });
+          if (response.data.status === 200) {
+            this.v$.$reset();
+            this.$emit("userAdded");
+          } else {
+            console.log(response.data.message);
+          }
+        } else {
+          const url = "api/updateUser/" + this.selectedUser._id;
+          const response = await axios.put(url, payload,{ headers: this.headers });
+          if (response.data.status === 200) {
+            this.v$.$reset();
+            this.$emit("userAdded");
+          } else {
+            console.log(response.data.message);
+          }
+        }
+      } catch (error) {
+        console.log(error);
+      }
     },
+  },
+  beforeMount() {
+    if (this.isEdit) {
+      this.state.name = this.selectedUser.name;
+      this.state.accountNumber = this.selectedUser.accountNo;
+      this.state.cnic = this.selectedUser.cnic;
+      this.state.accountType = this.selectedUser.accountType;
+      this.state.email = this.selectedUser.email;
+      this.state.password = this.selectedUser.password;
+      this.state.deposit = this.selectedUser.currentBalance;
+      this.state.contactNumber = this.selectedUser.contactNo;
+    }
   },
 };
 </script>

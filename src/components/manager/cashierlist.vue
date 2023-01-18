@@ -9,13 +9,18 @@
           type="button"
           data-bs-toggle="modal"
           data-bs-target="#staticBackdrop"
-          @click="openAddAccount"
+          @click="openCashierForm(null, false)"
         >
           Add New Staff
         </button>
       </div>
 
-      <EasyDataTable show-index :headers="headers" :items="items">
+      <EasyDataTable
+        show-index
+        :headers="header"
+        :loading="loading"
+        :items="cashierList"
+      >
         <template #loading>
           <img
             src="https://i.pinimg.com/originals/94/fd/2b/94fd2bf50097ade743220761f41693d5.gif"
@@ -24,10 +29,15 @@
         </template>
         <template #item-action="item">
           <div>
-            <a href="javascript:void(0)" class="me-2" @click="editItem(item)"
+            <a
+              href="javascript:void(0)"
+              data-bs-toggle="modal"
+              data-bs-target="#staticBackdrop"
+              class="me-2"
+              @click="openCashierForm(item, true)"
               >Edit</a
             >
-            <a href="javascript:void(0)" @click="deleteItem(item)">Delete</a>
+            <a href="javascript:void(0)" @click="deleteCashier(item)">Delete</a>
           </div>
         </template>
       </EasyDataTable>
@@ -45,13 +55,14 @@
         <div class="modal-content">
           <div class="modal-header">
             <h5 class="modal-title" id="staticBackdropLabel">
-              New Cashier Account
+              {{ isEdit ? "Update Cashier Account" : "New Cashier Account" }}
             </h5>
             <button
               type="button"
               class="btn-close"
               data-bs-dismiss="modal"
               aria-label="Close"
+              id="close-model"
               @click="closeCashierForm()"
             ></button>
           </div>
@@ -102,7 +113,7 @@
           </div>
           <div class="modal-footer">
             <button type="button" @click="addAccount()" class="btn btn-primary">
-              Save
+              {{ isEdit ? "Update" : "Save" }}
             </button>
           </div>
         </div>
@@ -115,6 +126,8 @@
 import useVuelidate from "@vuelidate/core";
 import { required, email, minLength } from "@vuelidate/validators";
 import { reactive, computed } from "vue";
+import axios from "axios";
+
 export default {
   name: "cashier-list",
   setup() {
@@ -138,63 +151,102 @@ export default {
   },
   data() {
     return {
-      headers: [
-        { text: "Email", value: "player" },
-        { text: "Password", value: "position" },
-        { text: "Account type", value: "indicator.height" },
+      header: [
+        { text: "Email", value: "email" },
+        { text: "Password", value: "password" },
+        { text: "Account type", value: "accountType" },
         { text: "Action", value: "action" },
       ],
-      items: [
-        {
-          player: "Stephen Curry",
-          team: "GSW",
-          number: 30,
-          position: "G",
-          indicator: { height: "6-2", weight: 185 },
-          lastAttended: "Davidson",
-          country: "USA",
-        },
-        {
-          player: "Lebron James",
-          team: "LAL",
-          number: 6,
-          position: "F",
-          indicator: { height: "6-9", weight: 250 },
-          lastAttended: "St. Vincent-St. Mary HS (OH)",
-          country: "USA",
-        },
-        {
-          player: "Kevin Durant",
-          team: "BKN",
-          number: 7,
-          position: "F",
-          indicator: { height: "6-10", weight: 240 },
-          lastAttended: "Texas-Austin",
-          country: "USA",
-        },
-        {
-          player: "Giannis Antetokounmpo",
-          team: "MIL",
-          number: 34,
-          position: "F",
-          indicator: { height: "6-11", weight: 242 },
-          lastAttended: "Filathlitikos",
-          country: "Greece",
-        },
-      ],
+      cashierList: [],
+      isEdit: false,
+      loading: false,
+      selectedData: null,
+      headers: {
+        authorization: localStorage.getItem("token"),
+        role: localStorage.getItem("role"),
+      },
     };
   },
   methods: {
-    addAccount() {
+    async getAllCashier() {
+      try {
+        this.loading = true;
+        var url = "api/getCashiers";
+        const response = await axios.get(url,{ headers: this.headers });
+        if (response.data.status === 200) {
+          this.cashierList = response.data.data;
+        } else {
+          console.log(response.data.message);
+        }
+        this.loading = false;
+      } catch (error) {
+        this.loading = false;
+        console.log(error);
+      }
+    },
+    async addAccount() {
       this.v$.$validate();
       if (this.v$.$error) {
         return;
       }
+      const payload = {
+        password: this.state.password,
+        email: this.state.email,
+        accountType: "Cashier",
+        role: "cashier",
+      };
+      if (!this.isEdit) {
+        const url = "api/createCashier";
+        const response = await axios.post(url, payload,{ headers: this.headers });
+        if (response.data.status === 200) {
+          document.getElementById("close-model").click();
+          this.closeCashierForm();
+          this.getAllCashier();
+        } else {
+          console.log(response.data.message);
+        }
+      } else {
+        const url = "api/updateCashier/" + this.selectedData._id;
+        const response = await axios.put(url, payload,{ headers: this.headers });
+        if (response.data.status === 200) {
+          document.getElementById("close-model").click();
+          this.closeCashierForm();
+          this.getAllCashier();
+        } else {
+          console.log(response.data.message);
+        }
+      }
     },
-    openAddAccount() {},
+    openCashierForm(data, type) {
+      this.isEdit = type;
+      this.selectedData = data;
+      if (type) {
+        this.state.email = data.email;
+        this.state.password = data.password;
+      }
+    },
+    async deleteCashier(data) {
+      try {
+        console.log(data);
+        const url = "api/deleteCashier/" + data?._id;
+        const response = await axios.delete(url,{ headers: this.headers });
+        if (response.data.status === 200) {
+          this.getAllCashier();
+        } else {
+          console.log(response.data.message);
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    },
     closeCashierForm() {
       this.v$.$reset();
+      this.state.email = "";
+      this.state.password = "";
     },
+  },
+  beforeMount() {
+    this.getAllCashier();
   },
 };
 </script>
